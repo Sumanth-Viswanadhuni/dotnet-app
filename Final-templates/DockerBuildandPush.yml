@@ -1,0 +1,20 @@
+steps:
+- task: Docker@1
+  displayName: 'Build the Docker image'
+  inputs:
+    containerregistrytype: 'Container Registry'
+    dockerRegistryEndpoint: 'docker-registry'
+    command: 'Build an image'
+    dockerFile: '**/Dockerfile'
+    imageName: '$(Repository)'
+    includeLatestTag: true
+    useDefaultContext: false
+    buildContext: '.'
+- task: Docker@1
+  displayName: 'Push the Docker image to Dockerhub'
+  inputs:
+    containerregistrytype: 'Container Registry'
+    dockerRegistryEndpoint: 'docker-registry'
+    command: 'Push an image'
+    imageName: '$(Repository)'
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))  
