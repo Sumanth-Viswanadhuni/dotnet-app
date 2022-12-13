@@ -1,0 +1,29 @@
+stage: PRODUCTION
+  displayName: PROD-Environment
+  dependsOn: Test
+
+  jobs:
+  - deployment: Deploy
+    displayName: Deploying Application into PRODUCTION Environment
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: "production"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              artifactName: $(ArtifactName)
+              downloadPath: '$(pipeline.workspace)'
+            
+          - template: ./Final-templates/DeployHelmPackage.yml           
+            parameters:
+              apiName: $(ApiName)
+              azureSubscription: '$(AzureSubscription)'
+              clusterResourceGroup: '$(ClusterResourceGroup)'
+              chartPackage: '$(ChartPackage)'
+              helmVersion: $(HelmVersion)
+              k8sNamespace: dotnet-app-prod
+              kubernetesCluster: $(KubernetesCluster)
+              releaseValuesFile: $(ReleaseValuesFile)
