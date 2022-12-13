@@ -42,7 +42,7 @@ stages:
           artifactStagingDirectory: $(Build.ArtifactStagingDirectory)
           artifactName: $(ArtifactName)
           helmVersion: $(HelmVersion)
-stage: dev 
+- stage: dev 
   displayName: Dev Environment
   dependsOn: Build
 
@@ -102,7 +102,7 @@ stage: dev
               kubernetesCluster: $(KubernetesCluster)
               releaseValuesFile: $(ReleaseValuesFile)
 
-stage: production 
+- stage: production 
   displayName: PROD Environment
   dependsOn: test
 
