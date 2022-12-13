@@ -68,7 +68,7 @@ stages:
               clusterResourceGroup: '$(ClusterResourceGroup)'
               chartPackage: '$(ChartPackage)'
               helmVersion: $(HelmVersion)
-              k8sNamespace: dotnet-app-DEV
+              k8sNamespace: dotnet-app-dev
               kubernetesCluster: $(KubernetesCluster)
               releaseValuesFile: $(ReleaseValuesFile)
 
@@ -128,7 +128,7 @@ stages:
               clusterResourceGroup: '$(ClusterResourceGroup)'
               chartPackage: '$(ChartPackage)'
               helmVersion: $(HelmVersion)
-              k8sNamespace: dotnet-app-PROD
+              k8sNamespace: dotnet-app-prod
               kubernetesCluster: $(KubernetesCluster)
               releaseValuesFile: $(ReleaseValuesFile)
 
