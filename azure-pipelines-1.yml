@@ -1,0 +1,136 @@
+name : dotnetapp
+trigger:
+  branches:
+    include:
+      - master
+ 
+pool:
+  vmImage: 'ubuntu-latest'
+ 
+variables:
+  AzureSubscription: 'serviceconnection-manual' # Name of the Service Connection
+  ApiName: 'dotnet-app'
+  BuildId: $(Build.BuildId)
+  BuildNumber: 1.0.0
+  ArtifactName: 'dotnet-app'
+  ClusterResourceGroup: MyResourceGroup  
+  ChartPackage: '$(Pipeline.workspace)/$(ApiName)/$(ApiName)-$(BuildNumber).tgz'  
+  artifactStagingDirectory: $(Build.ArtifactStagingDirectory)
+  ChartPath: $(ApiName)
+  HelmVersion: 3.10.1
+  K8sNamespace: 'default'
+  KubernetesCluster: 'myAKSCluster'
+  Repository: 'sumanthviswanadhuni/$(ApiName)'
+  ReleaseValuesFile: '$(pipeline.workspace)/dotnet-app/values.yaml'
+  
+stages:
+- stage: Build
+  displayName: Build image
+  jobs:  
+  - job: Build
+    displayName: Build and push Docker image
+    steps:
+    - template: ./Final-templates/DockerBuildandPush.yml
+    - template: ./Final-templates/CreateHelmPackage.yml
+      parameters:          
+          azureSubscription: $(AzureSubscription)
+          buildNumber: $(BuildNumber)
+          clusterResourceGroup: $(ClusterResourceGroup)          
+          chartPath: $(ChartPath)          
+          kubernetesCluster: $(KubernetesCluster)        
+          releaseValuesFile: $(ReleaseValuesFile)
+          artifactStagingDirectory: $(Build.ArtifactStagingDirectory)
+          artifactName: $(ArtifactName)
+          helmVersion: $(HelmVersion)
+stage: dev 
+  displayName: Dev Environment
+  dependsOn: Build
+
+  jobs:
+  - deployment: Deploy
+    displayName: Deploying Application into Dev Environment
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: "Dev"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              artifactName: $(ArtifactName)
+              downloadPath: '$(pipeline.workspace)'
+            
+          - template: ./Final-templates/DeployHelmPackage.yml           
+            parameters:
+              apiName: $(ApiName)
+              azureSubscription: '$(AzureSubscription)'
+              clusterResourceGroup: '$(ClusterResourceGroup)'
+              chartPackage: '$(ChartPackage)'
+              helmVersion: $(HelmVersion)
+              k8sNamespace: dotnet-app-DEV
+              kubernetesCluster: $(KubernetesCluster)
+              releaseValuesFile: $(ReleaseValuesFile)
+
+- stage: test 
+  displayName: Test Environment
+  dependsOn: dev
+
+  jobs:
+  - deployment: Deploy
+    displayName: Deploying Application into TEST Environment
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: "TEST"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              artifactName: $(ArtifactName)
+              downloadPath: '$(pipeline.workspace)'
+            
+          - template: ./Final-templates/DeployHelmPackage.yml           
+            parameters:
+              apiName: $(ApiName)
+              azureSubscription: '$(AzureSubscription)'
+              clusterResourceGroup: '$(ClusterResourceGroup)'
+              chartPackage: '$(ChartPackage)'
+              helmVersion: $(HelmVersion)
+              k8sNamespace: dotnet-app-test
+              kubernetesCluster: $(KubernetesCluster)
+              releaseValuesFile: $(ReleaseValuesFile)
+
+stage: production 
+  displayName: PROD Environment
+  dependsOn: test
+
+  jobs:
+  - deployment: Deploy
+    displayName: Deploying Application into PROD Environment
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: "PROD"
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              artifactName: $(ArtifactName)
+              downloadPath: '$(pipeline.workspace)'
+            
+          - template: ./Final-templates/DeployHelmPackage.yml           
+            parameters:
+              apiName: $(ApiName)
+              azureSubscription: '$(AzureSubscription)'
+              clusterResourceGroup: '$(ClusterResourceGroup)'
+              chartPackage: '$(ChartPackage)'
+              helmVersion: $(HelmVersion)
+              k8sNamespace: dotnet-app-PROD
+              kubernetesCluster: $(KubernetesCluster)
+              releaseValuesFile: $(ReleaseValuesFile)
+
+
+   
